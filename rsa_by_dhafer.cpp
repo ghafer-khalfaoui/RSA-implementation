@@ -71,7 +71,7 @@ int main() {
         cout << "Choose an option: ";
         int x;
         int y = 3;
-	string pass;
+		int pass;
         cin >> x;
         cin.ignore();
 
@@ -131,6 +131,7 @@ int main() {
 
     return 0;
 }
+
 
 
 
