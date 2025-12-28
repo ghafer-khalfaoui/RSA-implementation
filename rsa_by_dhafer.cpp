@@ -71,7 +71,7 @@ int main() {
         cout << "Choose an option: ";
         int x;
         int y = 3;
-		int pass;
+	int pass;
         cin >> x;
         cin.ignore();
 
@@ -86,6 +86,7 @@ int main() {
                 cin >> pass ;
                 if (pass == password) {
                     cout << "the private key d :" << d << endl;
+		    break;
                 }
                 else {
                     cout<<"wrong password try again"<<endl;
@@ -113,9 +114,19 @@ int main() {
             if (!key){
                 cout<<"gen a key first "<<endl;
                 continue;
-            }
-            decrypted = dec_func(cipher, d, n);
-            string p_text = number_to_text(decrypted);
+            
+	    }
+	    ZZ user_cipher;
+	    cout << " type the cipher to decrypt ";
+            
+	    cin >>user_cipher;
+	    
+	    
+
+            decrypted = dec_func(user_cipher, d, n);
+	    string p_text = number_to_text(decrypted);
+
+            
 
             cout << "Decrypted message " << p_text << endl;
         }
@@ -131,7 +142,6 @@ int main() {
 
     return 0;
 }
-
 
 
 
