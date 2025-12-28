@@ -14,7 +14,7 @@ void key_gen(ZZ &n, ZZ &e, ZZ &d) {
     phi = (p - 1) * (q - 1);
     cout<<"enter an odd number greater than 2 :";
     cout<<"default 65537";
-    cin >> e 
+    cin >> e; 
     while(e<3 || GCD(e,phi)!=1){
         cout << "e must be coprime to phi and greater than 2." << endl;
         cout << "the gcd was: " << GCD(e, phi) << endl;
@@ -38,11 +38,11 @@ ZZ text_to_number(string i) {
     long length = i.length();
 
     ZZ res;
-    ZZFromBytes(result, p, length);
+    ZZFromBytes(res, p, length);
     return res;
 }
 string number_to_text(ZZ i) {
-    long lenght = NumBytes(i);
+    long length = NumBytes(i);
 
     unsigned char* buffer = new unsigned char[length];
     BytesFromZZ(buffer, i, length);
@@ -56,11 +56,12 @@ int main() {
     ZZ n;
     ZZ e;
     ZZ d;
-    ZZ cipher
+    ZZ cipher;
     ZZ text;
-    string message;
+    string msg;
     int password = 123;
-
+    bool key = false;
+    ZZ decrypted;
     while (true) {
         cout << "rsa by dhafer"<<endl;
         cout << "1 : generate a key"<<endl;
@@ -69,20 +70,21 @@ int main() {
         cout << "4 : leave"<<endl;
         cout << "Choose an option: ";
         int x;
-        int y = 3
+        int y = 3;
+	string pass;
         cin >> x;
         cin.ignore();
 
-        if x == 1{
-            generateKeys(n, e, d);
-            key = true
+        if (x == 1){
+            key_gen(n, e, d);
+            key = true;
             cout << " n = " << n << endl;
             cout << "e = " << e << endl;
             while (y!=1){
                 
                 cout<<"for private key type the password to see it ";
                 cin >> pass ;
-                if pass == password {
+                if (pass == password) {
                     cout << "the private key d :" << d << endl;
                 }
                 else {
@@ -94,8 +96,8 @@ int main() {
             
         }
 
-        else if x == 2 {
-            if !key{
+        else if (x == 2) {
+            if (!key){
                 cout<<"gen a key first "<<endl;
                 continue;
             }
@@ -107,18 +109,18 @@ int main() {
             cout << " Cipher text : " << cipher << endl;
         }
 
-        else if x == 3 {
-            if !key{
+        else if (x == 3) {
+            if (!key){
                 cout<<"gen a key first "<<endl;
                 continue;
             }
             decrypted = dec_func(cipher, d, n);
-            string p_text = zzToString(decrypted);
+            string p_text = number_to_text(decrypted);
 
             cout << "Decrypted message " << p_text << endl;
         }
 
-        else if (choice == 4) {
+        else if (x == 4) {
             break;
         }
 
