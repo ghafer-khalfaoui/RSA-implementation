@@ -12,8 +12,8 @@ void key_gen(ZZ &n, ZZ &e, ZZ &d) {
     GenPrime(q, 1024);
     n = p * q;
     phi = (p - 1) * (q - 1);
-    cout<<"enter an odd number greater than 2 :";
-    cout<<"default 65537";
+    cout<<"enter an odd number greater than 2 :"<<endl;
+    cout<<"default 65537"<<endl;
     cin >> e; 
     while(e<3 || GCD(e,phi)!=1){
         cout << "e must be coprime to phi and greater than 2." << endl;
