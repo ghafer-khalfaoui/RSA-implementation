@@ -5,6 +5,7 @@
 using namespace std;
 using namespace NTL;
 
+// ===== KEY GENERATION =====
 void key_gen(ZZ &n, ZZ &e, ZZ &d) {         
     ZZ p, q, phi;
 
@@ -14,50 +15,57 @@ void key_gen(ZZ &n, ZZ &e, ZZ &d) {
     n = p * q;
     phi = (p - 1) * (q - 1);
 
-    cout << "enter an odd number greater than 2 :" << endl;
-    cout << "default 65537" << endl;
+    cout << "Enter an odd number greater than 2 :" << endl;
+    cout << "Default 65537" << endl;
     cin >> e;
 
     while (e < 3 || GCD(e, phi) != 1) {
         cout << "e must be coprime to phi and greater than 2." << endl;
-        cout << "the gcd was: " << GCD(e, phi) << endl;
+        cout << "The gcd was: " << GCD(e, phi) << endl;
         cin >> e;
     }
 
     InvMod(d, e, phi);
 }
 
+// ===== ENCRYPTION =====
 ZZ enc_func(ZZ text, ZZ e, ZZ n) {
     ZZ c;
     PowerMod(c, text, e, n);
     return c;
 }
 
+// ===== DECRYPTION =====
 ZZ dec_func(ZZ c, ZZ d, ZZ n) {
     ZZ text;
     PowerMod(text, c, d, n);
     return text;
 }
 
-ZZ text_to_number(string i) {
-    const unsigned char* p = (const unsigned char*)i.c_str();
-    long length = i.length();
-    ZZ res;
-    ZZFromBytes(res, p, length);
+// ===== STRING TO NUMBER =====
+ZZ text_to_number(const string &s) {
+    ZZ res(0);
+    for (unsigned char c : s) {
+        res <<= 8;      // shift left 8 bits
+        res += c;       // add the byte
+    }
     return res;
 }
 
-string number_to_text_safe(ZZ i) {
-    long length = NumBytes(i);
-    if (length == 0) return ""; // empty string for zero
-    unsigned char* buffer = new unsigned char[length];
-    BytesFromZZ(buffer, i, length);
-    string s((char*)buffer, length);
-    delete[] buffer;
+// ===== NUMBER TO STRING =====
+string number_to_text(const ZZ &num) {
+    ZZ temp = num;
+    string s;
+
+    while (temp != 0) {
+        unsigned char c = conv<unsigned char>(temp % 256);
+        s = c + s;      // prepend byte
+        temp /= 256;
+    }
     return s;
 }
 
-/* ===== NEW FUNCTION FOR PART 2 (CRYPTANALYSIS) ===== */
+// ===== RECOVER PRIVATE KEY (OPTION 4) =====
 void recover_private_key(ZZ p, ZZ q, ZZ e, ZZ &d, ZZ &n) {
     ZZ phi;
     n = p * q;
@@ -65,6 +73,7 @@ void recover_private_key(ZZ p, ZZ q, ZZ e, ZZ &d, ZZ &n) {
     InvMod(d, e, phi);
 }
 
+// ===== MAIN =====
 int main() {
     ZZ n, e, d, cipher, decrypted;
     string msg;
@@ -93,24 +102,24 @@ int main() {
 
             int pass, tries = 3;
             while (tries--) {
-                cout << "for private key type the password to see it: ";
+                cout << "For private key type the password to see it: ";
                 cin >> pass;
                 if (pass == password) {
                     cout << "private key d = " << d << endl;
                     break;
                 } else {
-                    cout << "wrong password\n";
+                    cout << "Wrong password\n";
                 }
             }
         }
 
         else if (x == 2) {
             if (!key) {
-                cout << "generate a key first\n";
+                cout << "Generate a key first\n";
                 continue;
             }
 
-            cout << "type the message to encrypt: ";
+            cout << "Type the message to encrypt: ";
             getline(cin, msg);
 
             ZZ msgZZ = text_to_number(msg);
@@ -125,20 +134,19 @@ int main() {
 
         else if (x == 3) {
             if (!key) {
-                cout << "generate a key first\n";
+                cout << "Generate a key first\n";
                 continue;
             }
 
             ZZ user_cipher;
-            cout << "type the cipher to decrypt: ";
+            cout << "Type the cipher to decrypt: ";
             cin >> user_cipher;
 
             decrypted = dec_func(user_cipher, d, n);
-            string decrypted_msg = number_to_text_safe(decrypted);
+            string decrypted_msg = number_to_text(decrypted);
             cout << "Decrypted message: " << decrypted_msg << endl;
         }
 
-        /* ===== OPTION 4: RSA CRYPTANALYSIS USING MSIEVE ===== */
         else if (x == 4) {
             ZZ p, q, e_attack, d_attack, n_attack, user_cipher;
 
@@ -157,9 +165,9 @@ int main() {
             recover_private_key(p, q, e_attack, d_attack, n_attack);
 
             ZZ recovered = dec_func(user_cipher, d_attack, n_attack);
-            cout << "recovered number " << recovered << endl; 
+            cout << "Recovered number: " << recovered << endl;
 
-            string recovered_msg = number_to_text_safe(recovered);
+            string recovered_msg = number_to_text(recovered);
             if (recovered_msg.empty()) {
                 cout << "Recovered message could not be converted. Check your inputs.\n";
             } else {
@@ -172,7 +180,7 @@ int main() {
         }
 
         else {
-            cout << "wrong input\n";
+            cout << "Wrong input\n";
         }
     }
 
