@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <vector>
 #include <NTL/ZZ.h>
 
 using namespace std;
@@ -8,9 +9,8 @@ using namespace NTL;
 // ===== KEY GENERATION =====
 void key_gen(ZZ &n, ZZ &e, ZZ &d) {
     ZZ p, q, phi;
-
-    GenPrime(p, 512); // smaller for testing, can increase
-    GenPrime(q, 512);
+    GenPrime(p, 128); // small for testing, adjust for bigger messages
+    GenPrime(q, 128);
 
     n = p * q;
     phi = (p - 1) * (q - 1);
@@ -43,9 +43,9 @@ ZZ dec_func(const ZZ &c, const ZZ &d, const ZZ &n) {
 // ===== STRING TO NUMBER =====
 ZZ text_to_number(const string &s) {
     ZZ res(0);
-    for (unsigned char c : s) {
-        res <<= 8;
-        res += ZZ(c);
+    for (size_t i = 0; i < s.size(); ++i) {
+        res *= 256;
+        res += ZZ((unsigned char)s[i]);
     }
     return res;
 }
@@ -53,11 +53,19 @@ ZZ text_to_number(const string &s) {
 // ===== NUMBER TO STRING =====
 string number_to_text(const ZZ &num) {
     ZZ temp = num;
-    string s;
-    while (temp != 0) {
-        unsigned char c = conv<unsigned char>(temp % 256);
-        s = c + s;
+    vector<unsigned char> bytes;
+    if (temp == 0) return "";
+
+    while (temp > 0) {
+        ZZ byte;
+        Rem(byte, temp, ZZ(256));
+        bytes.push_back(conv<long>(byte));
         temp /= 256;
+    }
+
+    string s;
+    for (int i = bytes.size() - 1; i >= 0; --i) {
+        s += bytes[i];
     }
     return s;
 }
