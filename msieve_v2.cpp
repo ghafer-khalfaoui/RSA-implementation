@@ -6,22 +6,20 @@ using namespace std;
 using namespace NTL;
 
 // ===== KEY GENERATION =====
-void key_gen(ZZ &n, ZZ &e, ZZ &d) {         
+void key_gen(ZZ &n, ZZ &e, ZZ &d) {
     ZZ p, q, phi;
 
-    GenPrime(p, 1024);
-    GenPrime(q, 1024);
+    GenPrime(p, 512); // smaller for testing, can increase
+    GenPrime(q, 512);
 
     n = p * q;
     phi = (p - 1) * (q - 1);
 
-    cout << "Enter an odd number greater than 2 :" << endl;
-    cout << "Default 65537" << endl;
+    cout << "Enter an odd number greater than 2 (default 65537): ";
     cin >> e;
 
     while (e < 3 || GCD(e, phi) != 1) {
-        cout << "e must be coprime to phi and greater than 2." << endl;
-        cout << "The gcd was: " << GCD(e, phi) << endl;
+        cout << "e must be coprime to phi and greater than 2. GCD = " << GCD(e, phi) << endl;
         cin >> e;
     }
 
@@ -29,14 +27,14 @@ void key_gen(ZZ &n, ZZ &e, ZZ &d) {
 }
 
 // ===== ENCRYPTION =====
-ZZ enc_func(ZZ text, ZZ e, ZZ n) {
+ZZ enc_func(const ZZ &text, const ZZ &e, const ZZ &n) {
     ZZ c;
     PowerMod(c, text, e, n);
     return c;
 }
 
 // ===== DECRYPTION =====
-ZZ dec_func(ZZ c, ZZ d, ZZ n) {
+ZZ dec_func(const ZZ &c, const ZZ &d, const ZZ &n) {
     ZZ text;
     PowerMod(text, c, d, n);
     return text;
@@ -46,8 +44,8 @@ ZZ dec_func(ZZ c, ZZ d, ZZ n) {
 ZZ text_to_number(const string &s) {
     ZZ res(0);
     for (unsigned char c : s) {
-        res <<= 8;      // shift left 8 bits
-        res += c;       // add the byte
+        res <<= 8;
+        res += ZZ(c);
     }
     return res;
 }
@@ -56,17 +54,16 @@ ZZ text_to_number(const string &s) {
 string number_to_text(const ZZ &num) {
     ZZ temp = num;
     string s;
-
     while (temp != 0) {
         unsigned char c = conv<unsigned char>(temp % 256);
-        s = c + s;      // prepend byte
+        s = c + s;
         temp /= 256;
     }
     return s;
 }
 
-// ===== RECOVER PRIVATE KEY (OPTION 4) =====
-void recover_private_key(ZZ p, ZZ q, ZZ e, ZZ &d, ZZ &n) {
+// ===== RECOVER PRIVATE KEY =====
+void recover_private_key(const ZZ &p, const ZZ &q, const ZZ &e, ZZ &d, ZZ &n) {
     ZZ phi;
     n = p * q;
     phi = (p - 1) * (q - 1);
@@ -102,10 +99,10 @@ int main() {
 
             int pass, tries = 3;
             while (tries--) {
-                cout << "For private key type the password to see it: ";
+                cout << "Enter password to see private key: ";
                 cin >> pass;
                 if (pass == password) {
-                    cout << "private key d = " << d << endl;
+                    cout << "Private key d = " << d << endl;
                     break;
                 } else {
                     cout << "Wrong password\n";
@@ -124,7 +121,7 @@ int main() {
 
             ZZ msgZZ = text_to_number(msg);
             if (msgZZ >= n) {
-                cout << "Error: message is too long for the current key. Reduce message length or generate a bigger key.\n";
+                cout << "Error: message too long for this key. Generate a bigger key.\n";
                 continue;
             }
 
