@@ -12,8 +12,7 @@ void key_gen(ZZ &n, ZZ &e, ZZ &d) {
     ZZ p, q, phi;
     
     cout << "Generating primes... please wait." << endl;
-    // 512 bits is standard for basic security (1024-bit key)
-    // You can lower this to 128 for speed during testing
+    // 512 bits is standard for basic security
     GenPrime(p, 512); 
     GenPrime(q, 512);
 
@@ -60,16 +59,17 @@ ZZ text_to_number(const string &s) {
     return res;
 }
 
-// ===== NUMBER TO STRING =====
+// ===== NUMBER TO STRING (FIXED) =====
 string number_to_text(const ZZ &num) {
     ZZ temp = num;
     vector<unsigned char> bytes;
     if (temp == 0) return "";
 
     while (temp > 0) {
-        ZZ byte;
-        Rem(byte, temp, ZZ(256));
-        bytes.push_back(conv<long>(byte));
+        // FIX: Use Rem with long integer instead of ZZ object
+        long byte_val = Rem(temp, 256); 
+        bytes.push_back((unsigned char)byte_val);
+        
         temp /= 256;
     }
 
@@ -81,7 +81,6 @@ string number_to_text(const ZZ &num) {
 }
 
 // ===== RECOVER PRIVATE KEY (PART 4 LOGIC) =====
-// Returns true if recovery was successful, false if inputs were invalid
 bool recover_private_key(const ZZ &p, const ZZ &q, const ZZ &e, ZZ &d, ZZ &n) {
     ZZ phi;
     n = p * q;
@@ -91,23 +90,11 @@ bool recover_private_key(const ZZ &p, const ZZ &q, const ZZ &e, ZZ &d, ZZ &n) {
         cout << "\n[CRITICAL ERROR] Mathematical mismatch in Part 4!\n";
         cout << "The 'e' you entered is not compatible with 'p' and 'q'.\n";
         cout << "GCD(e, phi) is " << GCD(e, phi) << ", but it must be 1.\n";
-        cout << "Are you sure you entered the correct p, q, and e?\n";
         return false;
     }
     
     InvMod(d, e, phi);
     return true;
-}
-
-// ===== SAFE INPUT HELPER =====
-// Prevents infinite loops if user types letters instead of numbers
-void safe_input(int &x) {
-    while(!(cin >> x)) {
-        cout << "Invalid input. Please enter a number: ";
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    }
-    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clear buffer
 }
 
 // ===== MAIN =====
@@ -133,7 +120,7 @@ int main() {
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             continue;
         }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Clean buffer for next getline
+        cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
 
         if (x == 1) {
             key_gen(n, e, d);
@@ -144,13 +131,11 @@ int main() {
             cout << "e = " << e << endl;
 
             int pass, tries = 3;
-            bool authorized = false;
             while (tries--) {
                 cout << "Enter password to see private key d: ";
                 if(cin >> pass) {
                      if (pass == password) {
                         cout << "Private key d = " << d << endl;
-                        authorized = true;
                         break;
                     } else {
                         cout << "Wrong password.\n";
@@ -210,7 +195,6 @@ int main() {
             cout << "Enter e used for encryption: "; cin >> e_in;
             cout << "Enter cipher text: "; cin >> user_cipher;
 
-            // Run recovery with checks
             if (recover_private_key(p_in, q_in, e_in, d_attack, n_attack)) {
                 ZZ recovered = dec_func(user_cipher, d_attack, n_attack);
                 string recovered_msg = number_to_text(recovered);
