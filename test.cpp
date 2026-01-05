@@ -1,34 +1,35 @@
 #include <iostream>
 #include <string>
+#include <vector>
 #include <NTL/ZZ.h>
 
 using namespace std;
 using namespace NTL;
 
 /* ===================== KEY GENERATION ===================== */
-void key_gen(ZZ &n, ZZ &e, ZZ &d) {         
+void key_gen(ZZ &n, ZZ &e, ZZ &d) {
     ZZ p, q, phi;
 
-    GenPrime(p, 1024);
-    GenPrime(q, 1024);
+    // SMALL PRIMES FOR MSIEVE COMPATIBILITY
+    GenPrime(p, 128);
+    GenPrime(q, 128);
 
     n = p * q;
     phi = (p - 1) * (q - 1);
 
-    cout << "enter an odd number greater than 2 :" << endl;
-    cout << "default 65537" << endl;
+    cout << "enter an odd number greater than 2:\n";
+    cout << "default 65537\n";
     cin >> e;
 
     while (e < 3 || GCD(e, phi) != 1) {
-        cout << "e must be coprime to phi and greater than 2." << endl;
-        cout << "the gcd was: " << GCD(e, phi) << endl;
+        cout << "e must be coprime to phi and greater than 2\n";
         cin >> e;
     }
 
     InvMod(d, e, phi);
 }
 
-/* ===================== ENCRYPT / DECRYPT ===================== */
+/* ===================== RSA CORE ===================== */
 ZZ enc_func(ZZ text, ZZ e, ZZ n) {
     ZZ c;
     PowerMod(c, text, e, n);
@@ -41,116 +42,144 @@ ZZ dec_func(ZZ c, ZZ d, ZZ n) {
     return text;
 }
 
-/* ===================== TEXT CONVERSION ===================== */
-ZZ text_to_number(string i) {
-    const unsigned char* p = (const unsigned char*)i.c_str();
-    long length = i.length();
-
+/* ===================== TEXT <-> NUMBER ===================== */
+ZZ text_to_number(const string &s) {
     ZZ res;
-    ZZFromBytes(res, p, length);
+    ZZFromBytes(res, (const unsigned char*)s.data(), s.size());
     return res;
 }
 
-string number_to_text(ZZ i) {
-    long length = NumBytes(i);
-    unsigned char* buffer = new unsigned char[length];
+string number_to_text(const ZZ &z) {
+    long len = NumBytes(z);
+    vector<unsigned char> buf(len);
+    BytesFromZZ(buf.data(), z, len);
+    return string(buf.begin(), buf.end());
+}
 
-    BytesFromZZ(buffer, i, length);
-    string s((char*)buffer, length);
+/* ===================== BLOCK HANDLING ===================== */
+long max_block_size(const ZZ &n) {
+    ZZ limit = 1;
+    long k = 0;
+    while (limit * 256 < n) {
+        limit *= 256;
+        k++;
+    }
+    return k;
+}
 
-    delete[] buffer;
-    return s;
+vector<ZZ> encrypt_text(const string &msg, ZZ e, ZZ n) {
+    vector<ZZ> blocks;
+    long k = max_block_size(n);
+
+    for (size_t i = 0; i < msg.size(); i += k) {
+        string part = msg.substr(i, k);
+        ZZ m = text_to_number(part);
+        blocks.push_back(enc_func(m, e, n));
+    }
+    return blocks;
+}
+
+string decrypt_text(const vector<ZZ> &blocks, ZZ d, ZZ n) {
+    string result;
+    for (const ZZ &c : blocks) {
+        ZZ m = dec_func(c, d, n);
+        result += number_to_text(m);
+    }
+    return result;
 }
 
 /* ===================== MAIN ===================== */
 int main() {
-    ZZ n, e, d, cipher, decrypted;
-    string msg;
-
+    ZZ n, e, d;
+    bool key_ready = false;
     int password = 123;
-    bool key = false;
 
     while (true) {
         cout << "\nRSA by Dhafer\n";
         cout << "1 : generate a key\n";
-        cout << "2 : encryption using the key\n";
-        cout << "3 : decryption using the key\n";
+        cout << "2 : encrypt text\n";
+        cout << "3 : decrypt text\n";
         cout << "4 : RSA cryptanalysis (msieve)\n";
-        cout << "5 : leave\n";
-        cout << "Choose an option: ";
+        cout << "5 : exit\n";
+        cout << "Choose: ";
 
-        int x;
-        cin >> x;
+        int choice;
+        cin >> choice;
         cin.ignore();
 
         /* ===== OPTION 1 ===== */
-        if (x == 1) {
+        if (choice == 1) {
             key_gen(n, e, d);
-            key = true;
+            key_ready = true;
 
-            cout << "n = " << n << endl;
-            cout << "e = " << e << endl;
+            cout << "Public key:\n";
+            cout << "n = " << n << "\n";
+            cout << "e = " << e << "\n";
 
-            int y = 3, pass;
-            while (y != 0) {
-                cout << "for private key type the password to see it: ";
+            int tries = 3, pass;
+            while (tries--) {
+                cout << "Password to view private key: ";
                 cin >> pass;
                 if (pass == password) {
-                    cout << "private key d = " << d << endl;
+                    cout << "d = " << d << "\n";
                     break;
                 } else {
-                    cout << "wrong password\n";
-                    y--;
+                    cout << "Wrong password\n";
                 }
             }
         }
 
         /* ===== OPTION 2 ===== */
-        else if (x == 2) {
-            if (!key) {
-                cout << "generate a key first\n";
+        else if (choice == 2) {
+            if (!key_ready) {
+                cout << "Generate a key first\n";
                 continue;
             }
 
-            cout << "type the message to encrypt: ";
+            string msg;
+            cout << "Enter message: ";
             getline(cin, msg);
 
-            ZZ msgZZ = text_to_number(msg);
-            cipher = enc_func(msgZZ, e, n);
+            vector<ZZ> cipher = encrypt_text(msg, e, n);
 
-            cout << "Cipher text: " << cipher << endl;
+            cout << "Cipher blocks:\n";
+            for (const ZZ &c : cipher)
+                cout << c << "\n";
         }
 
         /* ===== OPTION 3 ===== */
-        else if (x == 3) {
-            if (!key) {
-                cout << "generate a key first\n";
+        else if (choice == 3) {
+            if (!key_ready) {
+                cout << "Generate a key first\n";
                 continue;
             }
 
-            ZZ user_cipher;
-            cout << "type the cipher to decrypt: ";
-            cin >> user_cipher;
+            int count;
+            cout << "Number of cipher blocks: ";
+            cin >> count;
 
-            decrypted = dec_func(user_cipher, d, n);
-            cout << "Decrypted message: " << number_to_text(decrypted) << endl;
+            vector<ZZ> blocks(count);
+            for (int i = 0; i < count; i++) {
+                cout << "Block " << i + 1 << ": ";
+                cin >> blocks[i];
+            }
+
+            cout << "Decrypted message:\n";
+            cout << decrypt_text(blocks, d, n) << "\n";
         }
 
-        /* ===== OPTION 4 : RSA CRYPTANALYSIS ===== */
-        else if (x == 4) {
-            ZZ n_pub, e_pub, p, q, phi, d_recovered, c;
+        /* ===== OPTION 4 (MSIEVE) ===== */
+        else if (choice == 4) {
+            ZZ n_pub, e_pub, p, q, phi, d_rec;
+            int count;
 
-            cout << "\n--- RSA Cryptanalysis using msieve ---\n";
-            cout << "Enter public modulus n: ";
+            cout << "Enter public n: ";
             cin >> n_pub;
-
-            cout << "Enter public exponent e: ";
+            cout << "Enter public e: ";
             cin >> e_pub;
-
-            cout << "Enter factor p (from msieve): ";
+            cout << "Enter factor p: ";
             cin >> p;
-
-            cout << "Enter factor q (from msieve): ";
+            cout << "Enter factor q: ";
             cin >> q;
 
             if (p * q != n_pub) {
@@ -159,25 +188,29 @@ int main() {
             }
 
             phi = (p - 1) * (q - 1);
-            InvMod(d_recovered, e_pub, phi);
+            InvMod(d_rec, e_pub, phi);
 
-            cout << "Recovered private key d = " << d_recovered << endl;
+            cout << "Recovered d = " << d_rec << "\n";
 
-            cout << "Enter ciphertext to decrypt: ";
-            cin >> c;
+            cout << "Number of cipher blocks: ";
+            cin >> count;
 
-            ZZ recovered_msg = dec_func(c, d_recovered, n_pub);
-            cout << "Recovered plaintext: "
-                 << number_to_text(recovered_msg) << endl;
+            vector<ZZ> blocks(count);
+            for (int i = 0; i < count; i++) {
+                cout << "Block " << i + 1 << ": ";
+                cin >> blocks[i];
+            }
+
+            cout << "Recovered plaintext:\n";
+            cout << decrypt_text(blocks, d_rec, n_pub) << "\n";
         }
 
-        /* ===== OPTION 5 ===== */
-        else if (x == 5) {
+        else if (choice == 5) {
             break;
         }
 
         else {
-            cout << "wrong input\n";
+            cout << "Invalid choice\n";
         }
     }
 
