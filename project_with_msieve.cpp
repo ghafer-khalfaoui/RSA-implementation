@@ -8,8 +8,8 @@ using namespace NTL;
 void key_gen(ZZ &n, ZZ &e, ZZ &d) {         
     ZZ p, q, phi;
 
-    GenPrime(p, 1024);
-    GenPrime(q, 1024);
+    GenPrime(p, 256);
+    GenPrime(q, 256);
 
     n = p * q;
     phi = (p - 1) * (q - 1);
@@ -164,3 +164,4 @@ int main() {
 
     return 0;
 }
+
