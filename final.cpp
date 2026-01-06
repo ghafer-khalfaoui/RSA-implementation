@@ -9,7 +9,6 @@
 using namespace std;
 using namespace NTL;
 
-/* ---------- Utilities ---------- */
 bool coprime(const ZZ& a, const ZZ& b)
 {
     return GCD(a, b) == 1;
@@ -25,7 +24,7 @@ ZZ rsa_decrypt(const ZZ& c, const ZZ& d, const ZZ& n)
     return PowerMod(c, d, n);
 }
 
-/* ---------- Safe ASCII ---------- */
+
 char zz_to_ascii_safe(const ZZ& m)
 {
     long v = conv<long>(m);
@@ -34,7 +33,7 @@ char zz_to_ascii_safe(const ZZ& m)
     return (char)v;
 }
 
-/* ---------- Parse space-separated ZZ ---------- */
+
 vector<ZZ> parse_cipher_numbers_line(const string& line)
 {
     vector<ZZ> out;
@@ -44,7 +43,7 @@ vector<ZZ> parse_cipher_numbers_line(const string& line)
     return out;
 }
 
-/* ---------- ZZ <-> HEX ---------- */
+
 string zz_to_hex(const ZZ& x)
 {
     long len = NumBytes(x);
@@ -96,7 +95,6 @@ vector<ZZ> decode_hex(const string& s)
     return out;
 }
 
-/* ---------- SYMBOL encoding (base95) ---------- */
 string encode_symbols(const vector<ZZ>& cipher)
 {
     string out;
@@ -120,7 +118,7 @@ vector<ZZ> decode_symbols(const string& s)
     return out;
 }
 
-/* ---------- Main ---------- */
+
 int main()
 {
     ZZ p, q, n, phi, e, d;
@@ -154,10 +152,6 @@ int main()
 
             cout << "\nn = " << n << endl;
             cout << "phi = " << phi << endl;
-
-            cout << "\nCandidate e values:\n";
-            for (long i = 3; i < 300; i += 2)
-                if (coprime(ZZ(i), phi)) cout << i << " ";
             cout << "\nSelect e: ";
             cin >> e;
 
@@ -166,8 +160,6 @@ int main()
 
             key_ready = true;
         }
-
-        /* ---------- ENCRYPT INTEGER ---------- */
         else if (choice == 2)
         {
             if (!key_ready) continue;
@@ -175,12 +167,9 @@ int main()
             ZZ m;
             cout << "Enter integer message: ";
             cin >> m;
-
             ZZ c = rsa_encrypt(m, e, n);
             cout << "Ciphertext: " << c << endl;
         }
-
-        /* ---------- DECRYPT INTEGER ---------- */
         else if (choice == 3)
         {
             if (!key_ready) continue;
@@ -192,8 +181,6 @@ int main()
             ZZ m = rsa_decrypt(c, d, n);
             cout << "Decrypted integer: " << m << endl;
         }
-
-        /* ---------- ENCRYPT SENTENCE ---------- */
         else if (choice == 4)
         {
             if (!key_ready) continue;
@@ -213,8 +200,6 @@ int main()
             cout << "Ciphertext (symbols):\n";
             cout << encode_symbols(cipher) << endl;
         }
-
-        /* ---------- DECRYPT SENTENCE ---------- */
         else if (choice == 5)
         {
             if (!key_ready) continue;
@@ -245,13 +230,13 @@ int main()
             {
                 ZZ m = rsa_decrypt(x, d, n);
                 long v = conv<long>(m);
-                cout << "[DEBUG] decrypted number = " << v << endl;
+                cout << "decrypted number = " << v << endl;
 
                 try {
                     plain += zz_to_ascii_safe(m);
                 }
                 catch (...) {
-                    cout << "[ERROR] non-ASCII value ignored\n";
+                    cout << "non-ASCII value ignored\n";
                 }
             }
 
