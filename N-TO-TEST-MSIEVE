@@ -1,1 +1,9 @@
+sudo apt update
+sudo apt install -y build-essential libgmp-dev libecm-dev zlib1g-dev subversion
+
+cd ~
+svn checkout https://svn.code.sf.net/p/msieve/code/trunk msieve-src
+cd msieve-src
+nano Makefile
+
 67285926368133068308539071357052620541028826754927936266414227021695797428238278742593997044623404211789472883
