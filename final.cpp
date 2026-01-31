@@ -139,7 +139,6 @@ int main()
         cin >> choice;
         cin.ignore();
 
-        /* ---------- KEY GENERATION ---------- */
         if (choice == 1)
         {
             cout << "Enter prime p: ";
