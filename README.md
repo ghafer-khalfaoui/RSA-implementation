@@ -13,3 +13,13 @@ run
 ````
 ./rsa
 ````
+----------------------------------------------------------------------
+DES pre debug 
+````
+pip install customtkinter pycryptodome
+````
+ ```bash
+    python gui.py
+  ```
+  
+
