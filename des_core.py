@@ -14,7 +14,6 @@ def encrypt_message(key: str, plaintext: str) -> str:
     padded_data = pad(plaintext.encode('utf-8'), DES.block_size)
     encrypted_bytes = cipher.encrypt(padded_data)
     
-    # Return as an uppercase HEX string for easy copying/pasting
     return binascii.hexlify(encrypted_bytes).decode('utf-8').upper()
 
 def decrypt_message(key: str, ciphertext_hex: str) -> str:
